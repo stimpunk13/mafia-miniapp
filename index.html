@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мафия - Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--tg-theme-text-color, #000000);
+            font-size: 24px;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            background: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            transition: opacity 0.2s;
+        }
+
+        .btn:active {
+            opacity: 0.8;
+        }
+
+        .btn-secondary {
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            color: var(--tg-theme-text-color, #000000);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .input-group {
+            margin: 15px 0;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--tg-theme-text-color, #000000);
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--tg-theme-hint-color, #999999);
+            border-radius: 8px;
+            font-size: 16px;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+        }
+
+        .player-list {
+            margin: 20px 0;
+        }
+
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 8px 0;
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            border-radius: 12px;
+        }
+
+        .player-item.dead {
+            opacity: 0.5;
+            text-decoration: line-through;
+        }
+
+        .player-name {
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .player-role {
+            font-size: 14px;
+            color: var(--tg-theme-hint-color, #999999);
+            margin-left: 10px;
+        }
+
+        .role-setup {
+            margin: 20px 0;
+        }
+
+        .role-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            border-radius: 8px;
+        }
+
+        .role-name {
+            flex: 1;
+        }
+
+        .role-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .role-count {
+            min-width: 40px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .role-btn {
+            width: 35px;
+            height: 35px;
+            border: none;
+            border-radius: 50%;
+            font-size: 20px;
+            background: var(--tg-theme-button-color, #3390ec);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .game-info {
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .phase-indicator {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .log {
+            max-height: 200px;
+            overflow-y: auto;
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+
+        .log-item {
+            padding: 5px 0;
+            border-bottom: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+        }
+
+        .error {
+            color: #dc3545;
+            padding: 10px;
+            margin: 10px 0;
+            background: #ffe6e6;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--tg-theme-hint-color, #999999);
+        }
+
+        .summary {
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 15px 0;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+        }
+
+        .emoji {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ЭКРАН: Лобби -->
+        <div id="screen-lobby" class="screen active">
+            <h1>🎭 Мафия</h1>
+            <button class="btn" onclick="createGame()">Создать новую игру</button>
+            <div id="lobby-error" class="error" style="display:none;"></div>
+        </div>
+
+        <!-- ЭКРАН: Добавление игроков -->
+        <div id="screen-add-players" class="screen">
+            <h1>Добавить игроков</h1>
+            
+            <div class="input-group">
+                <label>Имя игрока:</label>
+                <input type="text" id="player-name-input" placeholder="Введите имя">
+            </div>
+            
+            <button class="btn" onclick="addPlayer()">Добавить игрока</button>
+            
+            <div class="player-list" id="players-list"></div>
+            
+            <button class="btn" onclick="showRoleSetup()">Настроить роли →</button>
+            <div id="add-players-error" class="error" style="display:none;"></div>
+        </div>
+
+        <!-- ЭКРАН: Настройка ролей -->
+        <div id="screen-roles" class="screen">
+            <h1>Настройка ролей</h1>
+            
+            <div class="summary">
+                <div class="summary-item">
+                    <span>Всего игроков:</span>
+                    <strong id="total-players">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>Всего ролей:</span>
+                    <strong id="total-roles">0</strong>
+                </div>
+            </div>
+
+            <div class="role-setup" id="role-setup"></div>
+            
+            <button class="btn" onclick="startGame()">Начать игру!</button>
+            <button class="btn btn-secondary" onclick="showAddPlayers()">← Назад к игрокам</button>
+            <div id="roles-error" class="error" style="display:none;"></div>
+        </div>
+
+        <!-- ЭКРАН: Игра идёт -->
+        <div id="screen-game" class="screen">
+            <h1>🎭 Игра идёт</h1>
+            
+            <div class="game-info">
+                <div class="phase-indicator" id="phase-indicator">День 1</div>
+                <div id="game-status"></div>
+            </div>
+
+            <div class="player-list" id="game-players-list"></div>
+
+            <div style="margin-top: 20px;">
+                <button class="btn" onclick="showVoteScreen()">Голосование</button>
+                <button class="btn btn-secondary" onclick="nextPhase()">Следующая фаза →</button>
+            </div>
+
+            <div class="log" id="game-log"></div>
+        </div>
+
+        <!-- ЭКРАН: Голосование -->
+        <div id="screen-vote" class="screen">
+            <h1>Голосование</h1>
+            <p style="text-align: center; margin: 15px 0;">Выберите игрока для изгнания:</p>
+            
+            <div class="player-list" id="vote-players-list"></div>
+            
+            <button class="btn btn-secondary" onclick="showGame()">← Назад</button>
+            <div id="vote-error" class="error" style="display:none;"></div>
+        </div>
+
+        <!-- ЭКРАН: Конец игры -->
+        <div id="screen-end" class="screen">
+            <h1>🏆 Игра окончена!</h1>
+            
+            <div class="game-info">
+                <div id="end-result"></div>
+            </div>
+
+            <div class="player-list" id="end-players-list"></div>
+
+            <div class="log" id="end-log"></div>
+
+            <button class="btn" onclick="returnToLobby()">Вернуться в лобби</button>
+        </div>
+    </div>
+
+    <script>
+        // Telegram WebApp API
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        // API URL (замените на ваш сервер)
+        const API_URL = 'https://mafia-miniapp-4.onrender.com';
+        
+        let currentGameId = null;
+        let gameState = null;
+
+        // Роли
+        const ROLES = {
+            'Босс мафии': 'Босс',
+            'Мафия': 'Мафия',
+            'Доктор': 'Доктор',
+            'Куртизанка': 'Куртиз',
+            'Маньяк': 'Маньяк',
+            'Бессмертный': 'Бессмерт',
+            'Мститель': 'Мститель',
+            'Мирный житель': 'Мирный',
+            'Комиссар': 'Комисс',
+            'Герцог': 'Герцог',
+            'Банши': 'Банши',
+            'Монах': 'Монах',
+            'Гадалка': 'Гадал',
+            'Крыса': 'Крыса',
+        };
+
+        // Показать экран
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            hideAllErrors();
+        }
+
+        function hideAllErrors() {
+            document.querySelectorAll('.error').forEach(e => e.style.display = 'none');
+        }
+
+        function showError(elementId, message) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.style.display = 'block';
+        }
+
+        // Создать игру
+        async function createGame() {
+            try {
+                const response = await fetch(`${API_URL}/game/create`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        host_id: tg.initDataUnsafe?.user?.id || 123456
+                    })
+                });
+                
+                const data = await response.json();
+                currentGameId = data.game_id;
+                
+                showScreen('screen-add-players');
+                updatePlayersList();
+            } catch (error) {
+                showError('lobby-error', 'Ошибка создания игры: ' + error.message);
+            }
+        }
+
+        // Добавить игрока
+        async function addPlayer() {
+            const input = document.getElementById('player-name-input');
+            const name = input.value.trim();
+            
+            if (!name) {
+                showError('add-players-error', 'Введите имя игрока');
+                return;
+            }
+
+            try {
+                await fetch(`${API_URL}/game/${currentGameId}/add_player`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ player_name: name })
+                });
+                
+                input.value = '';
+                await updatePlayersList();
+            } catch (error) {
+                showError('add-players-error', 'Ошибка: ' + error.message);
+            }
+        }
+
+        // Обновить список игроков
+        async function updatePlayersList() {
+            const response = await fetch(`${API_URL}/game/${currentGameId}`);
+            gameState = await response.json();
+            
+            const list = document.getElementById('players-list');
+            list.innerHTML = '';
+            
+            gameState.players.forEach(player => {
+                const div = document.createElement('div');
+                div.className = 'player-item';
+                div.innerHTML = `<div class="player-name">${player.name}</div>`;
+                list.appendChild(div);
+            });
+        }
+
+        // Показать настройку ролей
+        function showRoleSetup() {
+            if (gameState.players.length < 4) {
+                showError('add-players-error', 'Минимум 4 игрока!');
+                return;
+            }
+            showScreen('screen-roles');
+            renderRoleSetup();
+        }
+
+        // Отрисовать настройку ролей
+        function renderRoleSetup() {
+            const container = document.getElementById('role-setup');
+            container.innerHTML = '';
+            
+            Object.keys(ROLES).forEach(role => {
+                const count = gameState.role_counts[role] || 0;
+                
+                const div = document.createElement('div');
+                div.className = 'role-item';
+                div.innerHTML = `
+                    <div class="role-name">${ROLES[role]}</div>
+                    <div class="role-controls">
+                        <button class="role-btn" onclick="changeRoleCount('${role}', -1)">−</button>
+                        <div class="role-count">${count}</div>
+                        <button class="role-btn" onclick="changeRoleCount('${role}', 1)">+</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            
+            updateRoleSummary();
+        }
+
+        // Изменить количество роли
+        async function changeRoleCount(role, delta) {
+            const currentCount = gameState.role_counts[role] || 0;
+            const newCount = Math.max(0, currentCount + delta);
+            
+            try {
+                await fetch(`${API_URL}/game/${currentGameId}/set_role_count`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ role, count: newCount })
+                });
+                
+                gameState.role_counts[role] = newCount;
+                renderRoleSetup();
+            } catch (error) {
+                showError('roles-error', 'Ошибка: ' + error.message);
+            }
+        }
+
+        // Обновить сводку ролей
+        function updateRoleSummary() {
+            const totalPlayers = gameState.players.length;
+            const totalRoles = Object.values(gameState.role_counts).reduce((a, b) => a + b, 0);
+            
+            document.getElementById('total-players').textContent = totalPlayers;
+            document.getElementById('total-roles').textContent = totalRoles;
+            
+            if (totalPlayers !== totalRoles) {
+                document.getElementById('total-roles').style.color = '#dc3545';
+            } else {
+                document.getElementById('total-roles').style.color = '#28a745';
+            }
+        }
+
+        // Начать игру
+        async function startGame() {
+            try {
+                const response = await fetch(`${API_URL}/game/${currentGameId}/start`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    showError('roles-error', error.detail);
+                    return;
+                }
+                
+                await updateGameState();
+                showScreen('screen-game');
+            } catch (error) {
+                showError('roles-error', 'Ошибка: ' + error.message);
+            }
+        }
+
+        // Обновить состояние игры
+        async function updateGameState() {
+            const response = await fetch(`${API_URL}/game/${currentGameId}`);
+            gameState = await response.json();
+            renderGame();
+        }
+
+        // Отрисовать игру
+        function renderGame() {
+            // Фаза
+            let phaseText = '';
+            if (gameState.stage === 'DAY') {
+                phaseText = `☀️ День ${gameState.day}`;
+            } else if (gameState.stage === 'NIGHT') {
+                phaseText = `🌙 Ночь ${gameState.night}`;
+            } else {
+                phaseText = 'Игра началась';
+            }
+            document.getElementById('phase-indicator').textContent = phaseText;
+            
+            // Список игроков
+            const list = document.getElementById('game-players-list');
+            list.innerHTML = '';
+            
+            gameState.players.forEach(player => {
+                const div = document.createElement('div');
+                div.className = 'player-item' + (player.alive ? '' : ' dead');
+                div.innerHTML = `
+                    <div class="player-name">${player.name}</div>
+                    <div class="player-role">${player.role || '?'}</div>
+                `;
+                list.appendChild(div);
+            });
+            
+            // Лог
+            const log = document.getElementById('game-log');
+            log.innerHTML = '';
+            gameState.log_lines.forEach(line => {
+                const div = document.createElement('div');
+                div.className = 'log-item';
+                div.textContent = line;
+                log.appendChild(div);
+            });
+        }
+
+        // Следующая фаза
+        async function nextPhase() {
+            try {
+                await fetch(`${API_URL}/game/${currentGameId}/next_phase`, {
+                    method: 'POST'
+                });
+                await updateGameState();
+            } catch (error) {
+                alert('Ошибка: ' + error.message);
+            }
+        }
+
+        // Показать голосование
+        function showVoteScreen() {
+            showScreen('screen-vote');
+            renderVoteList();
+        }
+
+        // Отрисовать список для голосования
+        function renderVoteList() {
+            const list = document.getElementById('vote-players-list');
+            list.innerHTML = '';
+            
+            gameState.players.filter(p => p.alive).forEach(player => {
+                const div = document.createElement('div');
+                div.className = 'player-item';
+                div.style.cursor = 'pointer';
+                div.onclick = () => votePlayer(player.name);
+                div.innerHTML = `
+                    <div class="player-name">${player.name}</div>
+                    <div class="player-role">${player.role || '?'}</div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        // Проголосовать
+        async function votePlayer(name) {
+            try {
+                const response = await fetch(`${API_URL}/game/${currentGameId}/vote`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ target: name })
+                });
+                
+                const data = await response.json();
+                
+                if (data.game_ended) {
+                    await updateGameState();
+                    showEndScreen(data.message);
+                } else {
+                    await updateGameState();
+                    showScreen('screen-game');
+                }
+            } catch (error) {
+                showError('vote-error', 'Ошибка: ' + error.message);
+            }
+        }
+
+        // Показать экран конца игры
+        function showEndScreen(result) {
+            document.getElementById('end-result').textContent = result;
+            
+            const list = document.getElementById('end-players-list');
+            list.innerHTML = '';
+            gameState.players.forEach(player => {
+                const div = document.createElement('div');
+                div.className = 'player-item' + (player.alive ? '' : ' dead');
+                div.innerHTML = `
+                    <div class="player-name">${player.name}</div>
+                    <div class="player-role">${player.role || '?'}</div>
+                `;
+                list.appendChild(div);
+            });
+            
+            const log = document.getElementById('end-log');
+            log.innerHTML = '';
+            gameState.log_lines.forEach(line => {
+                const div = document.createElement('div');
+                div.className = 'log-item';
+                div.textContent = line;
+                log.appendChild(div);
+            });
+            
+            showScreen('screen-end');
+        }
+
+        // Навигация
+        function showAddPlayers() { showScreen('screen-add-players'); }
+        function showGame() { showScreen('screen-game'); }
+        function returnToLobby() {
+            currentGameId = null;
+            gameState = null;
+            showScreen('screen-lobby');
+        }
+
+        // Enter для добавления игрока
+        document.getElementById('player-name-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addPlayer();
+        });
+    </script>
+</body>
+</html>
