@@ -328,6 +328,3 @@ def check_end(g: Game) -> Optional[str]:
         return "Победа мафии! Мафия захватила город."
     
     return None
-
-# Монтируем статические файлы (frontend)
-app.mount("/static", StaticFiles(directory="../frontend"), name="static")
