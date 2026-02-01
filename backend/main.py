@@ -702,11 +702,6 @@ class NightActionRequest(BaseModel):
 # ==========================
 # API ENDPOINTS
 # ==========================
-@app.get("/")
-def read_root():
-    return {"message": "Mafia Mini App API v2"}
-
-
 @app.get("/api/roles")
 def get_roles():
     """Get all available roles with descriptions"""
