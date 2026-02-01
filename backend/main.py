@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
+import os
 from typing import Dict, List, Optional, Set, Tuple
 import copy
 from dataclasses import dataclass, field, asdict
@@ -1488,3 +1490,11 @@ def delete_game(game_id: str):
         del GAMES[game_id]
         return {"message": "Игра удалена"}
     raise HTTPException(status_code=404, detail="Игра не найдена")
+
+
+# Serve frontend
+@app.get("/")
+def serve_frontend():
+    """Serve the frontend index.html"""
+    frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "index.html")
+    return FileResponse(frontend_path, media_type="text/html")
