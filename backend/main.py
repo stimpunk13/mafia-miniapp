@@ -165,6 +165,7 @@ class GameSnapshot:
     successor_name: Optional[str]
     protected_from_vote_day: Dict[str, int]
     skip_vote_day: Optional[int]
+    intimidated_today: Optional[str]
     night_choices: dict
     night_steps: List[str]
     night_step_index: int
@@ -204,6 +205,9 @@ class Game:
 
     # duke mourning
     skip_vote_day: Optional[int] = None
+
+    # boss intimidation (player can't speak/vote today)
+    intimidated_today: Optional[str] = None
 
     # undo
     undo_stack: List[GameSnapshot] = field(default_factory=list)
@@ -261,6 +265,7 @@ class Game:
             successor_name=self.successor_name,
             protected_from_vote_day=copy.deepcopy(self.protected_from_vote_day),
             skip_vote_day=self.skip_vote_day,
+            intimidated_today=self.intimidated_today,
             night_choices={
                 "mafia_target": self.night_choices.mafia_target,
                 "boss_intimidate": self.night_choices.boss_intimidate,
@@ -301,6 +306,7 @@ class Game:
         self.successor_name = snap.successor_name
         self.protected_from_vote_day = snap.protected_from_vote_day
         self.skip_vote_day = snap.skip_vote_day
+        self.intimidated_today = snap.intimidated_today
         self.night_choices = NightChoices(**snap.night_choices)
         self.night_steps = snap.night_steps
         self.night_step_index = snap.night_step_index
@@ -811,6 +817,9 @@ def get_game_state(game_id: str):
         "skip_vote_day": g.skip_vote_day,
         "is_mourning_day": g.skip_vote_day == g.day,
 
+        # Boss intimidation (player can't speak/vote)
+        "intimidated_today": g.intimidated_today,
+
         # Undo
         "can_undo": len(g.undo_stack) > 0,
 
@@ -943,6 +952,7 @@ def start_game(game_id: str):
     g.mayor_name = None
     g.successor_name = None
     g.protected_from_vote_day = {}
+    g.intimidated_today = None
     g.log_lines = ["Ночь 0: привязка ролей началась."]
 
     for p in g.players.values():
@@ -1263,6 +1273,7 @@ def begin_night_internal(g: Game, prefix: str = "") -> dict:
     g.night += 1
     g.stage = Stage.NIGHT_MENU
     g.undo_stack = []
+    g.intimidated_today = None  # Clear intimidation when night starts
     g.push_undo()
 
     g.night_choices = NightChoices()
@@ -1318,8 +1329,6 @@ def night_action(game_id: str, req: NightActionRequest):
         if not req.target:
             raise HTTPException(status_code=400, detail="Выберите цель")
         g.night_choices.boss_intimidate = req.target
-        # Apply intimidation immediately
-        g.protected_from_vote_day[req.target] = g.day + 1
         result_message = f"Босс запугал: {req.target}"
 
     elif step == "maniac_kill":
@@ -1465,6 +1474,13 @@ def finish_night(game_id: str):
     g.day += 1
     g.stage = Stage.DAY_MENU
 
+    # Apply boss intimidation (player can't speak/vote today)
+    c = g.night_choices
+    if boss_intimidation_allowed(g) and c.boss_intimidate and c.boss_intimidate in g.players and g.players[c.boss_intimidate].alive:
+        g.intimidated_today = c.boss_intimidate
+    else:
+        g.intimidated_today = None
+
     return {
         "message": f"Ночь {g.night}: {killed_text}. Наступает день {g.day}",
         "stage": g.stage,
@@ -1472,6 +1488,7 @@ def finish_night(game_id: str):
         "deaths": killed_names,
         "summary": summary,
         "is_mourning": g.skip_vote_day == g.day,
+        "intimidated": g.intimidated_today,
     }
 
 

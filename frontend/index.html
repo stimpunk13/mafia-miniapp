@@ -245,6 +245,15 @@
             color: #000;
         }
 
+        .badge-intimidated {
+            background: #9b59b6;
+            color: #fff;
+        }
+
+        .player-item.intimidated {
+            border-color: #9b59b6;
+        }
+
         .role-editor {
             margin-bottom: 16px;
         }
@@ -1004,8 +1013,9 @@
             if (!container || !gameState) return;
 
             const players = gameState.players || [];
+            const intimidated = gameState.intimidated_today;
             container.innerHTML = players.map(p => `
-                <div class="player-item ${p.alive ? '' : 'dead'} ${gameState.protected_today?.includes(p.name) ? 'protected' : ''}">
+                <div class="player-item ${p.alive ? '' : 'dead'} ${gameState.protected_today?.includes(p.name) ? 'protected' : ''} ${intimidated === p.name ? 'intimidated' : ''}">
                     <div>
                         <div class="player-name">
                             <span class="status-icon">${p.alive ? '' : ''}</span>
@@ -1013,6 +1023,7 @@
                             ${p.is_mayor ? '<span class="badge badge-mayor">Мэр</span>' : ''}
                             ${p.is_successor ? '<span class="badge badge-successor">Преемник</span>' : ''}
                             ${gameState.protected_today?.includes(p.name) ? '<span class="badge badge-protected">Защищен</span>' : ''}
+                            ${intimidated === p.name ? '<span class="badge badge-intimidated">Запуган</span>' : ''}
                         </div>
                         ${p.role ? `<div class="player-role ${getRoleClass(p.role)}">${p.role}</div>` : ''}
                     </div>
