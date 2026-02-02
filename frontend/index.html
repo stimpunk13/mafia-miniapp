@@ -550,6 +550,16 @@
             text-align: center;
         }
 
+        .banshee-notice {
+            background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+            color: #fff;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            text-align: center;
+            font-weight: 600;
+        }
+
         .special-notice {
             background: var(--warning-color);
             color: #000;
@@ -652,6 +662,9 @@
         <div class="phase-indicator phase-day" id="day-phase-indicator">День 1</div>
         <div id="day-mourning-notice" class="mourning-notice hidden">
             Траур по Герцогу. Голосования сегодня нет.
+        </div>
+        <div id="day-banshee-notice" class="banshee-notice hidden">
+            🌙 Банши убита! Ночь отменена.
         </div>
         <div id="cheatsheet-day" class="cheatsheet"></div>
         <div class="player-list" id="day-players"></div>
@@ -849,16 +862,29 @@
                 await refreshGame();
 
                 if (result.special === 'banshee_no_night') {
-                    alert('Банши убита! Ночь отменена.');
+                    showBansheeNotice();
                 }
             } catch (e) {}
         }
 
         async function avengerRevenge(target) {
             try {
-                await apiCall(`/game/${currentGameId}/avenger_revenge`, 'POST', { target });
+                const result = await apiCall(`/game/${currentGameId}/avenger_revenge`, 'POST', { target });
                 await refreshGame();
+
+                if (result.special === 'banshee_no_night') {
+                    showBansheeNotice();
+                }
             } catch (e) {}
+        }
+
+        function showBansheeNotice() {
+            const notice = document.getElementById('day-banshee-notice');
+            if (notice) {
+                notice.classList.remove('hidden');
+                // Auto-hide after 10 seconds
+                setTimeout(() => notice.classList.add('hidden'), 10000);
+            }
         }
 
         async function skipToNight() {
