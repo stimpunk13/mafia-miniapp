@@ -651,7 +651,8 @@ def handle_mayor_death(g: Game, died: str):
         g.players[succ].is_mayor = True
         g.mayor_name = succ
         g.successor_name = None
-        g.protected_from_vote_day[succ] = g.day
+        # Protect successor on their first FULL day as mayor (next day)
+        g.protected_from_vote_day[succ] = g.day + 1
 
 
 # ==========================
