@@ -1217,6 +1217,30 @@ def avenger_revenge(game_id: str, req: RevengeRequest):
     handle_mayor_death(g, target)
     g.avenger_pending = None
 
+    # Check for Banshee (cancels night)
+    if role_t == ROLE_BANSHEE and not special_threshold_blocks(g):
+        g.day += 1
+        g.stage = Stage.DAY_MENU
+
+        result = check_end(g)
+        if result:
+            g.stage = Stage.END
+            g.log_lines.append(f"Итог: {result}")
+            return {
+                "message": f"Месть: {target} убит ({role_t}). Банши: ночь отменена.",
+                "stage": g.stage,
+                "game_ended": True,
+                "end_result": result,
+                "special": "banshee_no_night",
+            }
+
+        return {
+            "message": f"Месть: {target} убит ({role_t}). Банши: ночь отменена. День {g.day}",
+            "stage": g.stage,
+            "game_ended": False,
+            "special": "banshee_no_night",
+        }
+
     # Check game end
     result = check_end(g)
     if result:
